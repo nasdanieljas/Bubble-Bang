@@ -1,0 +1,122 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #10141d;
+    color: white;
+    text-align: center;
+    padding: 30px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #1c2533;
+    border-radius: 15px;
+    border: 1px solid #303d50;
+    box-shadow: 0 0 20px rgba(0, 150, 255, 0.08);
+}
+
+h1 {
+    color: #16c5d8;
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 0 10px rgba(22, 197, 216, 0.35);
+}
+
+.container > p {
+    color: #aab8ca;
+    font-size: 16px;
+    margin-bottom: 25px;
+}
+
+#gameArea {
+    width: 100%;
+    height: 400px;
+    background-color: #101820;
+    border: 2px solid #1877b9;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 12px rgba(22, 197, 216, 0.12);
+}
+
+#gameMessage {
+    margin-top: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #16c5d8;
+    text-shadow: 0 0 8px rgba(22, 197, 216, 0.3);
+}
+
+#resetButton {
+    margin-top: 15px;
+    padding: 12px 30px;
+    background-color: #1877b9;
+    color: white;
+    border: 1px solid #16c5d8;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#resetButton:hover {
+    background-color: #16c5d8;
+    box-shadow: 0 0 12px rgba(22, 197, 216, 0.4);
+}
+
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #7df9ff, #16c5d8 45%, #087eb8 75%);
+    box-shadow: 0 0 10px rgba(22, 197, 216, 0.65),
+                0 0 20px rgba(22, 197, 216, 0.35);
+    cursor: pointer;
+}
+
+.game-hud {
+    position: absolute;
+    top: 5px;
+    left: 15px;
+    right: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 10;
+}
+
+.lives-display,
+.score-display {
+    text-align: center;
+}
+
+#score {
+    color: #16c5d8;
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(22, 197, 216, 0.5);
+}
+
+#lives {
+    display: flex;
+    gap: 5px;
+}
+
+.heart {
+    color: #10141d;
+    font-size: 25px;
+    -webkit-text-stroke: 1px #ff3b4f;
+    text-shadow: 0 0 8px rgba(255, 59, 79, 0.5);
+}
+
+.game-hud {
+    pointer-events: none;
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Bang</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Bubble Bang</h1>
+        <p>Pop the bubbles before they get too big!</p>
+
+        <div id="gameArea">
+
+            <div class="game-hud">
+                <div class="lives-display">
+                    <span id="lives">
+                        <span class="heart">♥</span>
+                        <span class="heart">♥</span>
+                        <span class="heart">♥</span>
+                    </span>
+                </div>
+
+                <div class="score-display">
+                    <span id="score">0</span>
+                </div>
+            </div>
+        </div>
+
+        <p id="gameMessage"></p>
+
+        <button id="resetButton">Reset Game</button>
+    </div>
+
+    <script src="game.js"></script>
+
+</body>
+</html>
+
