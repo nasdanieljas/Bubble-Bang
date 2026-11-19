@@ -1,41 +1,126 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bubble Bang</title>
-
+    <meta name="theme-color" content="#07131f">
+    <meta name="description" content="Bubble Bang is a fast-paced arcade bubble popping game.">
+    <title>Bubble Bang | Arcade Bubble Popper</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Bubble Bang</h1>
-        <p>Pop the bubbles before they get too big!</p>
+    <main class="app-shell">
+        <header class="brand" aria-label="Bubble Bang">
+            <p class="eyebrow">ARCADE BUBBLE POPPER</p>
+            <h1>Bubble <span>Bang</span></h1>
+        </header>
 
-        <div id="gameArea">
+        <section id="menuScreen" class="screen menu-screen" aria-labelledby="menuTitle">
+            <div class="menu-intro">
+                <h2 id="menuTitle">Pop fast. Build combos. Stay afloat.</h2>
+                <p>Clear bubbles before they burst. Special bubbles can turn a close game around.</p>
+            </div>
 
-            <div class="game-hud">
-                <div class="lives-display">
-                    <span id="lives">
-                        <span class="heart">♥</span>
-                        <span class="heart">♥</span>
-                        <span class="heart">♥</span>
-                    </span>
+            <div class="menu-grid">
+                <div class="panel">
+                    <label for="playerName">Player name</label>
+                    <input id="playerName" name="playerName" type="text" maxlength="16" autocomplete="nickname" placeholder="Player" aria-describedby="nameHint">
+                    <p id="nameHint" class="field-hint">Used for this browser's local high-score table.</p>
+
+                    <fieldset class="mode-picker">
+                        <legend>Choose a mode</legend>
+                        <div class="mode-options">
+                            <input id="relaxed" type="radio" name="mode" value="relaxed">
+                            <label for="relaxed"><strong>Relaxed</strong><span>Slower growth, 4 lives</span></label>
+
+                            <input id="classic" type="radio" name="mode" value="classic" checked>
+                            <label for="classic"><strong>Classic</strong><span>The intended Bubble Bang mode</span></label>
+
+                            <input id="challenge" type="radio" name="mode" value="challenge">
+                            <label for="challenge"><strong>Challenge</strong><span>Fast spawns and rapid growth</span></label>
+                        </div>
+                    </fieldset>
+
+                    <button id="startButton" class="button button-primary" type="button">Start game</button>
                 </div>
 
-                <div class="score-display">
-                    <span id="score">0</span>
+                <aside class="panel how-to" aria-labelledby="howToTitle">
+                    <h3 id="howToTitle">How to play</h3>
+                    <ul>
+                        <li>Click or tap bubbles before they become too large.</li>
+                        <li>Pop quickly to grow your combo and score multiplier.</li>
+                        <li>Lose a life when any bubble bursts. The game ends at zero lives.</li>
+                    </ul>
+                    <div class="bubble-guide" aria-label="Special bubble guide">
+                        <p><span class="guide-bubble gold" aria-hidden="true"></span><strong>Gold</strong> — bonus points</p>
+                        <p><span class="guide-bubble bomb" aria-hidden="true"></span><strong>Bomb</strong> — clears nearby bubbles</p>
+                        <p><span class="guide-bubble freeze" aria-hidden="true"></span><strong>Freeze</strong> — pauses growth</p>
+                        <p><span class="guide-bubble heart" aria-hidden="true"></span><strong>Heart</strong> — restores one life</p>
+                    </div>
+                    <p class="key-hint">Keyboard: <kbd>Space</kbd> pause/resume · <kbd>M</kbd> mute</p>
+                </aside>
+            </div>
+
+            <section class="panel leaderboard" aria-labelledby="leaderboardTitle">
+                <div class="leaderboard-heading">
+                    <div>
+                        <p class="eyebrow">ON THIS DEVICE</p>
+                        <h3 id="leaderboardTitle">High scores</h3>
+                    </div>
+                    <button id="clearScoresButton" class="text-button" type="button">Clear scores</button>
+                </div>
+                <ol id="highScores" class="high-scores" aria-live="polite"></ol>
+            </section>
+        </section>
+
+        <section id="gameScreen" class="screen game-screen" hidden aria-label="Bubble Bang game">
+            <div class="game-toolbar">
+                <div class="stat"><span>Score</span><strong id="score">0</strong></div>
+                <div class="stat"><span>Combo</span><strong id="combo">—</strong></div>
+                <div class="stat"><span>Time</span><strong id="time">0:00</strong></div>
+                <div class="stat stat-lives"><span>Lives</span><strong id="lives" aria-label="3 lives remaining">♥♥♥</strong></div>
+                <div class="toolbar-actions">
+                    <button id="soundButton" class="icon-button" type="button" aria-pressed="false" aria-label="Mute sound" title="Mute sound (M)">♪</button>
+                    <button id="pauseButton" class="icon-button" type="button" aria-pressed="false" aria-label="Pause game" title="Pause game (Space)">Ⅱ</button>
                 </div>
             </div>
-        </div>
 
-        <p id="gameMessage"></p>
+            <div id="gameArea" class="game-area" aria-label="Game area. Click or tap each bubble before it bursts." tabindex="0">
+                <p id="levelBadge" class="level-badge">LEVEL 1 · CALM</p>
+                <div id="effectLayer" class="effect-layer" aria-hidden="true"></div>
 
-        <button id="resetButton">Reset Game</button>
-    </div>
+                <div id="pauseOverlay" class="game-overlay" hidden>
+                    <div class="overlay-card">
+                        <p class="eyebrow">TAKE A BREATH</p>
+                        <h2>Game paused</h2>
+                        <p>Your bubbles and timer are waiting for you.</p>
+                        <button id="resumeButton" class="button button-primary" type="button">Resume</button>
+                        <button id="quitButton" class="button button-secondary" type="button">Back to menu</button>
+                    </div>
+                </div>
 
-    <script src="game.js"></script>
+                <div id="gameOverOverlay" class="game-overlay" hidden>
+                    <div class="overlay-card">
+                        <p class="eyebrow">BUBBLES WON THIS ROUND</p>
+                        <h2>Game over</h2>
+                        <p id="finalSummary">Final score: 0</p>
+                        <p id="newRecord" class="new-record" hidden>New high score!</p>
+                        <button id="playAgainButton" class="button button-primary" type="button">Play again</button>
+                        <button id="menuButton" class="button button-secondary" type="button">Back to menu</button>
+                    </div>
+                </div>
+            </div>
 
+            <p id="gameMessage" class="game-message" role="status" aria-live="polite">Classic mode — pop the bubbles.</p>
+            <div class="game-actions">
+                <button id="restartButton" class="text-button" type="button">Restart run</button>
+                <button id="leaveButton" class="text-button" type="button">Back to menu</button>
+            </div>
+        </section>
+
+        <p class="footer-note">Made with HTML, CSS, and JavaScript. Scores stay only in this browser.</p>
+    </main>
+
+    <script src="game.js" defer></script>
 </body>
 </html>
-
