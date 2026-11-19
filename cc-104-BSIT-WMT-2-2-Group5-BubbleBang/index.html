@@ -17,7 +17,7 @@
 
         <section id="menuScreen" class="screen menu-screen" aria-labelledby="menuTitle">
             <div class="menu-intro">
-                <h2 id="menuTitle">Pop fast. Build combos. Stay afloat.</h2>
+                <h2 id="menuTitle">Pop fast. Stay afloat.</h2>
                 <p>Clear bubbles before they burst. Special bubbles can turn a close game around.</p>
             </div>
 
@@ -31,7 +31,7 @@
                         <legend>Choose a mode</legend>
                         <div class="mode-options">
                             <input id="relaxed" type="radio" name="mode" value="relaxed">
-                            <label for="relaxed"><strong>Relaxed</strong><span>Slower growth, 4 lives</span></label>
+                            <label for="relaxed"><strong>Relaxed</strong><span>Slower growth, 3 lives</span></label>
 
                             <input id="classic" type="radio" name="mode" value="classic" checked>
                             <label for="classic"><strong>Classic</strong><span>The intended Bubble Bang mode</span></label>
@@ -48,12 +48,11 @@
                     <h3 id="howToTitle">How to play</h3>
                     <ul>
                         <li>Click or tap bubbles before they become too large.</li>
-                        <li>Pop quickly to grow your combo and score multiplier.</li>
+                        <li>Collect special bubbles for bonus effects.</li>
                         <li>Lose a life when any bubble bursts. The game ends at zero lives.</li>
                     </ul>
                     <div class="bubble-guide" aria-label="Special bubble guide">
                         <p><span class="guide-bubble gold" aria-hidden="true"></span><strong>Gold</strong> — bonus points</p>
-                        <p><span class="guide-bubble bomb" aria-hidden="true"></span><strong>Bomb</strong> — clears nearby bubbles</p>
                         <p><span class="guide-bubble freeze" aria-hidden="true"></span><strong>Freeze</strong> — pauses growth</p>
                         <p><span class="guide-bubble heart" aria-hidden="true"></span><strong>Heart</strong> — restores one life</p>
                     </div>
@@ -76,7 +75,6 @@
         <section id="gameScreen" class="screen game-screen" hidden aria-label="Bubble Bang game">
             <div class="game-toolbar">
                 <div class="stat"><span>Score</span><strong id="score">0</strong></div>
-                <div class="stat"><span>Combo</span><strong id="combo">—</strong></div>
                 <div class="stat"><span>Time</span><strong id="time">0:00</strong></div>
                 <div class="stat stat-lives"><span>Lives</span><strong id="lives" aria-label="3 lives remaining">♥♥♥</strong></div>
                 <div class="toolbar-actions">

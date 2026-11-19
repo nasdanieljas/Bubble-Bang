@@ -1,14 +1,13 @@
 const START_SIZE = 32;
 const MAX_SIZE = 116;
-const MAX_LIVES = 5;
-const COMBO_WINDOW = 950;
+const MAX_LIVES = 3;
 const SCORE_STORAGE_KEY = "bubble-bang-high-scores-v1";
 const SETTINGS_STORAGE_KEY = "bubble-bang-settings-v1";
 
 const MODES = {
     relaxed: {
         label: "Relaxed",
-        lives: 4,
+        lives: 3,
         growth: 10,
         spawnDelay: 1750,
         minimumDelay: 1050,
@@ -48,7 +47,7 @@ const RAMP_CAP = 10;
 
 // Special bubbles now arrive at score milestones instead of at random.
 const HEART_MILESTONE = 1000;
-const FREEZE_MILESTONE = 300;
+const FREEZE_MILESTONE = 600;
 
 const elements = {
     menuScreen: document.getElementById("menuScreen"),
@@ -60,7 +59,6 @@ const elements = {
     gameArea: document.getElementById("gameArea"),
     effectLayer: document.getElementById("effectLayer"),
     score: document.getElementById("score"),
-    combo: document.getElementById("combo"),
     time: document.getElementById("time"),
     lives: document.getElementById("lives"),
     levelBadge: document.getElementById("levelBadge"),
@@ -86,13 +84,10 @@ let bubbles = [];
 let nextBubbleId = 1;
 let score = 0;
 let lives = MODES.classic.lives;
-let combo = 0;
-let bestCombo = 0;
 let successfulPops = 0;
 let specialQueue = [];
 let lastHeartMilestone = 0;
 let lastFreezeMilestone = 0;
-let lastPopAt = -Infinity;
 let frozenUntil = 0;
 let frozenRemaining = 0;
 let startedAt = 0;
@@ -325,16 +320,6 @@ function spawnBubble() {
     elements.gameArea.appendChild(element);
 }
 
-function cycleBubbleFocus(step) {
-    if (bubbles.length === 0) return;
-
-    const currentIndex = bubbles.findIndex((bubble) => bubble.element === document.activeElement);
-    const nextIndex = currentIndex === -1
-        ? (step > 0 ? 0 : bubbles.length - 1)
-        : (currentIndex + step + bubbles.length) % bubbles.length;
-    bubbles[nextIndex].element?.focus({ preventScroll: true });
-}
-
 function removeBubble(bubble) {
     const index = bubbles.indexOf(bubble);
     if (index !== -1) bubbles.splice(index, 1);
@@ -349,18 +334,9 @@ function popBubble(id) {
 
     const now = performance.now();
     const oldLevel = getLevel();
-    const wasFocused = bubble.element === document.activeElement;
-    combo = now - lastPopAt <= COMBO_WINDOW ? combo + 1 : 1;
-    bestCombo = Math.max(bestCombo, combo);
-    lastPopAt = now;
-
-    const multiplier = getMultiplier();
-    let earnedPoints = BUBBLE_TYPES[bubble.type].points * multiplier;
-    const pointLabel = `+${earnedPoints}${multiplier > 1 ? ` ×${multiplier}` : ""}`;
-
+    const earnedPoints = BUBBLE_TYPES[bubble.type].points;
     createBurst(bubble.x + bubble.size / 2, bubble.y + bubble.size / 2, BUBBLE_TYPES[bubble.type].color);
     removeBubble(bubble);
-    if (wasFocused) cycleBubbleFocus(1);
 
     if (bubble.type === "freeze") {
         frozenUntil = now + 4600;
@@ -381,17 +357,13 @@ function popBubble(id) {
     successfulPops += 1;
     queueMilestoneSpecials();
     if (specialQueue.length > 0) spawnBubble();
-    createScoreFloat(bubble.x + bubble.size / 2, bubble.y + bubble.size / 2, `+${earnedPoints}${multiplier > 1 ? ` ×${multiplier}` : ""}`, BUBBLE_TYPES[bubble.type].color);
+    createScoreFloat(bubble.x + bubble.size / 2, bubble.y + bubble.size / 2, `+${earnedPoints}`, BUBBLE_TYPES[bubble.type].color);
     updateHUD(now);
 
     if (getLevel() > oldLevel) {
         announce(`Level ${getLevel()} — ${getLevelName()}. The pace has increased!`);
         playSound("level");
     }
-}
-
-function getMultiplier() {
-    return Math.min(4, 1 + Math.floor((combo - 1) / 4));
 }
 
 function growBubbles(deltaMs, now) {
@@ -414,8 +386,6 @@ function growBubbles(deltaMs, now) {
     });
 
     lives = Math.max(0, lives - bursting.length);
-    combo = 0;
-    lastPopAt = -Infinity;
     announce(`${bursting.length} bubble${bursting.length === 1 ? "" : "s"} burst! ${lives} life${lives === 1 ? "" : "s"} left.`);
     playSound("miss");
     updateHUD(now);
@@ -458,7 +428,6 @@ function createFreezeWash() {
 function updateHUD(now = performance.now()) {
     const level = getLevel();
     elements.score.textContent = formatNumber(score);
-    elements.combo.textContent = combo > 1 ? `${combo} · ×${getMultiplier()}` : "—";
     elements.time.textContent = formatTime(getElapsedTime(now));
     elements.lives.textContent = "♥".repeat(lives) || "—";
     elements.lives.setAttribute("aria-label", `${lives} ${lives === 1 ? "life" : "lives"} remaining`);
@@ -516,13 +485,10 @@ function startGame() {
     clearBubbles();
     score = 0;
     lives = MODES[currentModeKey].lives;
-    combo = 0;
-    bestCombo = 0;
     successfulPops = 0;
     specialQueue = [];
     lastHeartMilestone = 0;
     lastFreezeMilestone = 0;
-    lastPopAt = -Infinity;
     frozenUntil = 0;
     frozenRemaining = 0;
     elapsedBeforePause = 0;
@@ -604,17 +570,13 @@ function endGame() {
     clearBubbles();
 
     const wasHighScore = saveScore();
-    elements.finalSummary.textContent = `Final score: ${formatNumber(score)} · ${formatTime(elapsedBeforePause)} · best combo ×${Math.max(1, getMultiplierFrom(bestCombo))}`;
+    element.finalSummary.textContent = `Final score: ${formatNumber(score)} · ${formatTime(elapsedBeforePause)}`;
     elements.newRecord.hidden = !wasHighScore;
     elements.gameOverOverlay.hidden = false;
     announce(`Game over. Final score: ${formatNumber(score)}.`);
     stopMusic();
     playSound("gameover");
     elements.playAgainButton.focus({ preventScroll: true });
-}
-
-function getMultiplierFrom(comboCount) {
-    return Math.min(4, 1 + Math.floor((comboCount - 1) / 4));
 }
 
 function returnToMenu() {
@@ -831,42 +793,23 @@ document.querySelectorAll('input[name="mode"]').forEach((radio) => {
     radio.addEventListener("change", renderHighScores);
 });
 
-// Clicking empty space breaks the combo and costs a life.
-elements.gameArea.addEventListener("click", (event) => {
-    if (gameState !== "playing") return;
-    if (event.target instanceof Element && event.target.closest(".bubble, .game-overlay")) return;
-
-    const now = performance.now();
-    combo = 0;
-    lastPopAt = -Infinity;
-    lives = Math.max(0, lives - 1);
-
-    const bounds = elements.gameArea.getBoundingClientRect();
-    createScoreFloat(event.clientX - bounds.left, event.clientY - bounds.top, "MISS", "#ff6e93");
-    playSound("miss");
-    updateHUD(now);
-
-    if (lives === 0) endGame();
-    else announce(`Miss! Clicked outside a bubble. ${lives} ${lives === 1 ? "life" : "lives"} left.`);
-});
 
 document.addEventListener("keydown", (event) => {
     if (event.target instanceof HTMLInputElement) return;
 
-    const targetIsBubble = event.target instanceof HTMLElement && event.target.classList.contains("bubble");
-
-    // A focused bubble is a real button: let Enter/Space pop it instead of pausing.
-    if (targetIsBubble && (event.code === "Space" || event.code === "Enter")) return;
-
-    if (gameState === "playing" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+    if (event.code === "Space") {
         event.preventDefault();
-        cycleBubbleFocus(event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1);
+
+        if (!event.repeat && (gameState === "playing" || gameState === "paused")) {
+            togglePause();
+        }
+
         return;
     }
 
-    if ((event.code === "Space" || event.key.toLowerCase() === "p") && (gameState === "playing" || gameState === "paused")) {
+    if (event.code === "Enter") {
         event.preventDefault();
-        togglePause();
+        return;
     }
 
     if (event.key.toLowerCase() === "m") {
@@ -881,10 +824,6 @@ document.addEventListener("keydown", (event) => {
         pauseGame();
     }
 });
-
-// The bomb bubble was removed, so hide its stale how-to entry from the menu.
-const bombGuide = document.querySelector(".guide-bubble.bomb");
-if (bombGuide) bombGuide.closest("p")?.setAttribute("hidden", "");
 
 setMuted(muted);
 renderHighScores();

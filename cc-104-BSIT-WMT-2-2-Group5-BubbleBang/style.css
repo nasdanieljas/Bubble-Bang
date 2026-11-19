@@ -297,7 +297,6 @@ input:focus-visible {
 }
 
 .guide-bubble.gold { background: radial-gradient(circle at 30% 27%, #fffbd7, #ffd854 42%, #d37f00 85%); box-shadow: 0 0 10px rgba(255, 216, 90, 0.65); }
-.guide-bubble.bomb { background: radial-gradient(circle at 30% 27%, #ffd0df, #ff5681 42%, #8e1c43 85%); box-shadow: 0 0 10px rgba(255, 86, 129, 0.65); }
 .guide-bubble.freeze { background: radial-gradient(circle at 30% 27%, #e7fdff, #95ebff 42%, #3f75e5 85%); box-shadow: 0 0 10px rgba(138, 218, 255, 0.65); }
 .guide-bubble.heart { background: radial-gradient(circle at 30% 27%, #fff1f5, #ff85a8 42%, #c6215b 85%); box-shadow: 0 0 10px rgba(255, 89, 137, 0.65); }
 
@@ -538,7 +537,6 @@ kbd {
 }
 
 .bubble--gold { background: radial-gradient(circle at 29% 26%, #fffdd8 0 3%, #ffe881 15%, #ffc942 42%, #bb6700 78%, #704000 100%); box-shadow: inset -8px -12px 15px rgba(115, 60, 0, 0.35), 0 0 16px rgba(255, 216, 90, 0.8); }
-.bubble--bomb { background: radial-gradient(circle at 29% 26%, #ffe4ed 0 3%, #ff98b6 15%, #ff5b87 42%, #b41e54 78%, #650d2c 100%); box-shadow: inset -8px -12px 15px rgba(85, 0, 29, 0.35), 0 0 16px rgba(255, 86, 129, 0.76); }
 .bubble--freeze { background: radial-gradient(circle at 29% 26%, #fbffff 0 3%, #b8f4ff 15%, #6ed5ff 42%, #4c7be7 78%, #26378e 100%); box-shadow: inset -8px -12px 15px rgba(15, 43, 134, 0.35), 0 0 16px rgba(123, 219, 255, 0.8); }
 .bubble--heart { background: radial-gradient(circle at 29% 26%, #fff4f7 0 3%, #ffb2c7 15%, #ff719b 42%, #d72668 78%, #7e123f 100%); box-shadow: inset -8px -12px 15px rgba(105, 0, 48, 0.35), 0 0 16px rgba(255, 100, 157, 0.78); }
 
