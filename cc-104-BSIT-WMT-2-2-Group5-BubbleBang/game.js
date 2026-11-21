@@ -570,7 +570,7 @@ function endGame() {
     clearBubbles();
 
     const wasHighScore = saveScore();
-    element.finalSummary.textContent = `Final score: ${formatNumber(score)} · ${formatTime(elapsedBeforePause)}`;
+    elements.finalSummary.textContent = `Final score: ${formatNumber(score)} · ${formatTime(elapsedBeforePause)}`;
     elements.newRecord.hidden = !wasHighScore;
     elements.gameOverOverlay.hidden = false;
     announce(`Game over. Final score: ${formatNumber(score)}.`);

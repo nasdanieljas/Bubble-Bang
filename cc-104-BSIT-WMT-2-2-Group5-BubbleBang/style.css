@@ -481,7 +481,7 @@ kbd {
         radial-gradient(circle at 10% 90%, rgba(117, 86, 241, 0.13), transparent 19rem),
         linear-gradient(135deg, #061521, #0d2a3c);
     box-shadow: var(--shadow);
-    cursor: crosshair;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8' fill='none' stroke='%23000000' stroke-width='1.5'/%3E%3Cpath d='M12 0 V5 M12 19 V24 M0 12 H5 M19 12 H24' stroke='%23000000' stroke-width='1.8'/%3E%3Ccircle cx='12' cy='12' r='2.5' fill='%23ff1744' stroke='%23ff1744' stroke-width='1'/%3E%3C/svg%3E") 12 12, crosshair;
 }
 
 .game-area::before {
@@ -520,7 +520,7 @@ kbd {
     padding: 0;
     background: radial-gradient(circle at 29% 26%, #f3ffff 0 3%, #91f1ff 13%, #46c9ec 36%, #1676b6 74%, #0b3c72 100%);
     box-shadow: inset -8px -12px 15px rgba(5, 44, 95, 0.34), 0 0 13px rgba(91, 229, 255, 0.56);
-    cursor: pointer;
+    cursor: inherit;
     touch-action: manipulation;
     animation: bubble-enter 180ms ease-out both;
 }
