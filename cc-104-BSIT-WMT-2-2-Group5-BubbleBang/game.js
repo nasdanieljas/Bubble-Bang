@@ -49,6 +49,103 @@ const RAMP_CAP = 10;
 const HEART_MILESTONE = 1000;
 const FREEZE_MILESTONE = 600;
 
+// ---------------------------------------------------------------------------
+// Audio settings: music and sound effects are controlled separately.
+// ---------------------------------------------------------------------------
+const DEFAULT_SETTINGS = { musicOn: true, sfxOn: true, musicVolume: 0.55, sfxVolume: 0.8 };
+
+function loadSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)) || {};
+        const loaded = { ...DEFAULT_SETTINGS, ...saved };
+        // Old saves used a single "muted" flag.
+        if (saved.muted === true && saved.musicOn === undefined) {
+            loaded.musicOn = false;
+            loaded.sfxOn = false;
+        }
+        return loaded;
+    } catch {
+        return { ...DEFAULT_SETTINGS };
+    }
+}
+
+function saveSettings() {
+    try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch {
+        // The game remains playable when browser storage is disabled.
+    }
+}
+
+let settings = loadSettings();
+
+// The sound panel (switches + volume sliders) is built here so only game.js needs to change.
+function buildAudioPanel() {
+    const style = document.createElement("style");
+    style.textContent = `
+        .audio-settings { width: 100%; margin: 12px 0 16px; text-align: left; }
+        .audio-settings h3 { margin: 0 0 10px; font-size: 1rem; }
+        .audio-row { margin-bottom: 14px; }
+        .audio-row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+        .audio-row-volume { display: flex; align-items: center; gap: 10px; }
+        .audio-row-volume input[type="range"] { flex: 1; accent-color: #7eeeff; }
+        .audio-row-volume input[type="range"]:disabled { opacity: 0.4; }
+        .audio-row-volume output { min-width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+        .switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+        .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+        .switch-track { position: absolute; inset: 0; border-radius: 999px; background: #5b6475; transition: background 0.2s; }
+        .switch-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
+        .switch input:checked + .switch-track { background: #2fbfd6; }
+        .switch input:checked + .switch-track::after { transform: translateX(22px); }
+        .switch input:focus-visible + .switch-track { outline: 3px solid #ffe26f; outline-offset: 2px; }
+    `;
+    document.head.appendChild(style);
+
+    const panel = document.createElement("div");
+    panel.className = "audio-settings";
+    panel.innerHTML = `
+        <h3>Sound</h3>
+        <div class="audio-row">
+            <div class="audio-row-head">
+                <span>Background music</span>
+                <label class="switch">
+                    <input type="checkbox" id="musicToggle" role="switch" aria-label="Background music">
+                    <span class="switch-track"></span>
+                </label>
+            </div>
+            <div class="audio-row-volume">
+                <input type="range" id="musicVolume" min="0" max="100" step="1" aria-label="Background music volume">
+                <output id="musicVolumeValue" for="musicVolume"></output>
+            </div>
+        </div>
+        <div class="audio-row">
+            <div class="audio-row-head">
+                <span>Sound effects (bubble pops)</span>
+                <label class="switch">
+                    <input type="checkbox" id="sfxToggle" role="switch" aria-label="Sound effects">
+                    <span class="switch-track"></span>
+                </label>
+            </div>
+            <div class="audio-row-volume">
+                <input type="range" id="sfxVolume" min="0" max="100" step="1" aria-label="Sound effects volume">
+                <output id="sfxVolumeValue" for="sfxVolume"></output>
+            </div>
+        </div>
+    `;
+
+    const resumeButton = document.getElementById("resumeButton");
+    if (resumeButton && resumeButton.parentElement) {
+        resumeButton.parentElement.insertBefore(panel, resumeButton);
+    } else {
+        document.getElementById("pauseOverlay").appendChild(panel);
+    }
+}
+
+buildAudioPanel();
+
+// The top-bar mute button is no longer used; sound is controlled from the pause menu.
+document.getElementById("soundButton")?.remove();
+
 const elements = {
     menuScreen: document.getElementById("menuScreen"),
     gameScreen: document.getElementById("gameScreen"),
@@ -63,7 +160,6 @@ const elements = {
     lives: document.getElementById("lives"),
     levelBadge: document.getElementById("levelBadge"),
     gameMessage: document.getElementById("gameMessage"),
-    soundButton: document.getElementById("soundButton"),
     pauseButton: document.getElementById("pauseButton"),
     pauseOverlay: document.getElementById("pauseOverlay"),
     gameOverOverlay: document.getElementById("gameOverOverlay"),
@@ -74,7 +170,13 @@ const elements = {
     restartButton: document.getElementById("restartButton"),
     leaveButton: document.getElementById("leaveButton"),
     finalSummary: document.getElementById("finalSummary"),
-    newRecord: document.getElementById("newRecord")
+    newRecord: document.getElementById("newRecord"),
+    musicToggle: document.getElementById("musicToggle"),
+    sfxToggle: document.getElementById("sfxToggle"),
+    musicVolume: document.getElementById("musicVolume"),
+    sfxVolume: document.getElementById("sfxVolume"),
+    musicVolumeValue: document.getElementById("musicVolumeValue"),
+    sfxVolumeValue: document.getElementById("sfxVolumeValue")
 };
 
 let gameState = "menu";
@@ -96,24 +198,7 @@ let spawnRemaining = 0;
 let nextSpawnAt = 0;
 let lastFrameAt = 0;
 let frameId = null;
-let muted = loadSettings().muted;
 let audioContext = null;
-
-function loadSettings() {
-    try {
-        return JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)) || { muted: false };
-    } catch {
-        return { muted: false };
-    }
-}
-
-function saveSettings() {
-    try {
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ muted }));
-    } catch {
-        // The game remains playable when browser storage is disabled.
-    }
-}
 
 function getSavedScores() {
     try {
@@ -610,7 +695,6 @@ function normaliseName(name) {
 // Background music is synthesised in JavaScript, so no audio files are needed.
 const MUSIC_BPM = 112;
 const MUSIC_STEP = 60 / MUSIC_BPM / 4;
-const MUSIC_VOLUME = 0.55;
 const MUSIC_MELODY = [
     69, null, 72, 76, 79, null, 76, 72,
     69, null, 72, 74, 76, null, 74, 72,
@@ -647,7 +731,7 @@ function ensureAudioContext() {
 function ensureMusicGain() {
     if (!musicGainNode && audioContext) {
         musicGainNode = audioContext.createGain();
-        musicGainNode.gain.value = MUSIC_VOLUME;
+        musicGainNode.gain.value = settings.musicVolume;
         musicGainNode.connect(audioContext.destination);
     }
     return musicGainNode;
@@ -678,7 +762,7 @@ function scheduleMusicNote(frequency, time, duration, wave, volume) {
 }
 
 function scheduleMusic() {
-    if (gameState !== "playing" || muted || !audioContext) return;
+    if (gameState !== "playing" || !settings.musicOn || !audioContext) return;
 
     while (musicNextTime < audioContext.currentTime + 0.2) {
         const index = musicStep % MUSIC_MELODY.length;
@@ -702,12 +786,13 @@ function stopMusicScheduler() {
 }
 
 function startMusic(restart = true) {
-    if (muted || !ensureAudioContext()) return;
+    if (!settings.musicOn || !ensureAudioContext()) return;
 
     stopMusicScheduler();
     if (restart) musicStep = 0;
     musicNextTime = audioContext.currentTime + 0.06;
-    fadeMusic(MUSIC_VOLUME);
+    ensureMusicGain();
+    fadeMusic(settings.musicVolume);
     musicTimer = window.setInterval(scheduleMusic, 25);
     scheduleMusic();
 }
@@ -717,20 +802,57 @@ function stopMusic() {
     fadeMusic(0);
 }
 
-function setMuted(value) {
-    muted = value;
-    elements.soundButton.setAttribute("aria-pressed", String(muted));
-    elements.soundButton.setAttribute("aria-label", muted ? "Unmute sound and music" : "Mute sound and music");
-    elements.soundButton.title = `${muted ? "Unmute" : "Mute"} sound and music (M)`;
-    elements.soundButton.textContent = muted ? "×" : "♪";
-    saveSettings();
+// ---------------------------------------------------------------------------
+// Sound controls (pause menu switches, sliders, and the top-bar mute button)
+// ---------------------------------------------------------------------------
+function syncAudioUI() {
+    elements.musicToggle.checked = settings.musicOn;
+    elements.sfxToggle.checked = settings.sfxOn;
+    elements.musicVolume.value = Math.round(settings.musicVolume * 100);
+    elements.sfxVolume.value = Math.round(settings.sfxVolume * 100);
+    elements.musicVolume.disabled = !settings.musicOn;
+    elements.sfxVolume.disabled = !settings.sfxOn;
+    elements.musicVolumeValue.textContent = `${elements.musicVolume.value}%`;
+    elements.sfxVolumeValue.textContent = `${elements.sfxVolume.value}%`;
+}
 
-    if (muted) stopMusic();
+function setMusicOn(value) {
+    settings.musicOn = value;
+    saveSettings();
+    syncAudioUI();
+
+    if (!value) stopMusic();
     else if (gameState === "playing") startMusic(false);
 }
 
+function setSfxOn(value) {
+    settings.sfxOn = value;
+    saveSettings();
+    syncAudioUI();
+    if (value) playSound("pop");
+}
+
+function setMusicVolume(value) {
+    settings.musicVolume = value;
+    saveSettings();
+    syncAudioUI();
+    if (gameState === "playing" && settings.musicOn) fadeMusic(value);
+}
+
+function setSfxVolume(value) {
+    settings.sfxVolume = value;
+    saveSettings();
+    syncAudioUI();
+}
+
+function toggleMuteAll() {
+    const shouldMute = settings.musicOn || settings.sfxOn;
+    setMusicOn(!shouldMute);
+    setSfxOn(!shouldMute);
+}
+
 function playSound(type) {
-    if (muted || !window.AudioContext) return;
+    if (!settings.sfxOn || settings.sfxVolume < 0.01 || !window.AudioContext) return;
 
     try {
         if (!ensureAudioContext()) return;
@@ -744,13 +866,14 @@ function playSound(type) {
             level: [880, 0.15, "sine", 0.04],
             gameover: [120, 0.35, "sine", 0.045]
         };
-        const [frequency, duration, wave, volume] = tones[type] || tones.pop;
+        const [frequency, duration, wave, baseVolume] = tones[type] || tones.pop;
+        const volume = baseVolume * settings.sfxVolume * 1.25; // 80% = original loudness
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
         oscillator.type = wave;
         oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
         gain.gain.setValueAtTime(volume, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
         oscillator.connect(gain).connect(audioContext.destination);
         oscillator.start();
         oscillator.stop(audioContext.currentTime + duration);
@@ -767,7 +890,11 @@ elements.playAgainButton.addEventListener("click", startGame);
 elements.menuButton.addEventListener("click", returnToMenu);
 elements.restartButton.addEventListener("click", startGame);
 elements.leaveButton.addEventListener("click", returnToMenu);
-elements.soundButton.addEventListener("click", () => setMuted(!muted));
+elements.musicToggle.addEventListener("change", () => setMusicOn(elements.musicToggle.checked));
+elements.sfxToggle.addEventListener("change", () => setSfxOn(elements.sfxToggle.checked));
+elements.musicVolume.addEventListener("input", () => setMusicVolume(Number(elements.musicVolume.value) / 100));
+elements.sfxVolume.addEventListener("input", () => setSfxVolume(Number(elements.sfxVolume.value) / 100));
+elements.sfxVolume.addEventListener("change", () => playSound("pop")); // preview when you let go
 elements.clearScoresButton.addEventListener("click", () => {
     if (window.confirm("Clear all Bubble Bang high scores stored in this browser?")) {
         try {
@@ -813,7 +940,7 @@ document.addEventListener("keydown", (event) => {
     }
 
     if (event.key.toLowerCase() === "m") {
-        setMuted(!muted);
+        toggleMuteAll();
     }
 
     if (event.key.toLowerCase() === "r" && gameState === "gameover") {
@@ -825,5 +952,5 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-setMuted(muted);
+syncAudioUI();
 renderHighScores();
