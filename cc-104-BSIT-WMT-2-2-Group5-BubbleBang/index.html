@@ -12,7 +12,7 @@
     <main class="app-shell">
         <header class="brand" aria-label="Bubble Bang">
             <p class="eyebrow">ARCADE BUBBLE POPPER</p>
-            <h1>Bubble <span>Bang</span></h1>
+            <h1>Bubble <span>B<span class="logo-crosshair"></span>ng</span></h1>
         </header>
 
         <section id="menuScreen" class="screen menu-screen" aria-labelledby="menuTitle">
@@ -31,7 +31,7 @@
                         <legend>Choose a mode</legend>
                         <div class="mode-options">
                             <input id="relaxed" type="radio" name="mode" value="relaxed">
-                            <label for="relaxed"><strong>Relaxed</strong><span>Slower growth, 3 lives</span></label>
+                            <label for="relaxed"><strong>Relaxed</strong><span>Slower growth</span></label>
 
                             <input id="classic" type="radio" name="mode" value="classic" checked>
                             <label for="classic"><strong>Classic</strong><span>The intended Bubble Bang mode</span></label>
@@ -50,13 +50,14 @@
                         <li>Click or tap bubbles before they become too large.</li>
                         <li>Collect special bubbles for bonus effects.</li>
                         <li>Lose a life when any bubble bursts. The game ends at zero lives.</li>
+                        <li>You have 3 lives
                     </ul>
                     <div class="bubble-guide" aria-label="Special bubble guide">
                         <p><span class="guide-bubble gold" aria-hidden="true"></span><strong>Gold</strong> — bonus points</p>
                         <p><span class="guide-bubble freeze" aria-hidden="true"></span><strong>Freeze</strong> — pauses growth</p>
                         <p><span class="guide-bubble heart" aria-hidden="true"></span><strong>Heart</strong> — restores one life</p>
                     </div>
-                    <p class="key-hint">Keyboard: <kbd>Space</kbd> pause/resume · <kbd>M</kbd> mute</p>
+                    <p class="key-hint">Keyboard: <kbd>Space</kbd> pause/resume</p>
                 </aside>
             </div>
 
@@ -78,7 +79,6 @@
                 <div class="stat"><span>Time</span><strong id="time">0:00</strong></div>
                 <div class="stat stat-lives"><span>Lives</span><strong id="lives" aria-label="3 lives remaining">♥♥♥</strong></div>
                 <div class="toolbar-actions">
-                    <button id="soundButton" class="icon-button" type="button" aria-pressed="false" aria-label="Mute sound" title="Mute sound (M)">♪</button>
                     <button id="pauseButton" class="icon-button" type="button" aria-pressed="false" aria-label="Pause game" title="Pause game (Space)">Ⅱ</button>
                 </div>
             </div>
@@ -89,9 +89,33 @@
 
                 <div id="pauseOverlay" class="game-overlay" hidden>
                     <div class="overlay-card">
-                        <p class="eyebrow">TAKE A BREATH</p>
                         <h2>Game paused</h2>
                         <p>Your bubbles and timer are waiting for you.</p>
+                        <div class="audio-settings">
+                            <h3>Sound</h3>
+
+                            <div class="audio-control">
+                                <div class="audio-control-header">
+                                   <label for="musicToggle">Background music</label>
+                                    <input type="checkbox" id="musicToggle" checked>
+                                </div>
+                            <div class="audio-slider">
+                                <input type="range" id="musicVolume" min="0" max="100" value="100">
+                                <span id="musicVolumeValue">100%</span>
+                            </div>
+                        </div>
+
+                        <div class="audio-control">
+                            <div class="audio-control-header">
+                                <label for="sfxToggle">Sound effects (bubble pops)</label>
+                                <input type="checkbox" id="sfxToggle" checked>
+                            </div>
+                            <div class="audio-slider">
+                                <input type="range" id="sfxVolume" min="0" max="100" value="100">
+                                <span id="sfxVolumeValue">100%</span>
+                            </div>
+                        </div>
+                    </div>
                         <button id="resumeButton" class="button button-primary" type="button">Resume</button>
                         <button id="quitButton" class="button button-secondary" type="button">Back to menu</button>
                     </div>

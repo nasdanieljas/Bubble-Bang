@@ -2,7 +2,6 @@ const START_SIZE = 32;
 const MAX_SIZE = 116;
 const MAX_LIVES = 3;
 const SCORE_STORAGE_KEY = "bubble-bang-high-scores-v1";
-const SETTINGS_STORAGE_KEY = "bubble-bang-settings-v1";
 
 const MODES = {
     relaxed: {
@@ -63,7 +62,6 @@ const elements = {
     lives: document.getElementById("lives"),
     levelBadge: document.getElementById("levelBadge"),
     gameMessage: document.getElementById("gameMessage"),
-    soundButton: document.getElementById("soundButton"),
     pauseButton: document.getElementById("pauseButton"),
     pauseOverlay: document.getElementById("pauseOverlay"),
     gameOverOverlay: document.getElementById("gameOverOverlay"),
@@ -96,24 +94,7 @@ let spawnRemaining = 0;
 let nextSpawnAt = 0;
 let lastFrameAt = 0;
 let frameId = null;
-let muted = loadSettings().muted;
 let audioContext = null;
-
-function loadSettings() {
-    try {
-        return JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY)) || { muted: false };
-    } catch {
-        return { muted: false };
-    }
-}
-
-function saveSettings() {
-    try {
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ muted }));
-    } catch {
-        // The game remains playable when browser storage is disabled.
-    }
-}
 
 function getSavedScores() {
     try {
@@ -304,7 +285,6 @@ function spawnBubble() {
     element.style.left = `${x}px`;
     element.style.top = `${y}px`;
     element.setAttribute("aria-label", `Pop ${definition.label}`);
-    element.title = `Pop ${definition.label}`;
 
     if (definition.icon) {
         const icon = document.createElement("span");
@@ -313,8 +293,20 @@ function spawnBubble() {
         icon.textContent = definition.icon;
         element.appendChild(icon);
     }
+        // para mas precise ang pointer
+    element.addEventListener("click", (event) => {
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distance = Math.hypot(
+        event.clientX - centerX,
+        event.clientY - centerY
+    );
 
-    element.addEventListener("click", () => popBubble(bubble.id));
+    if (distance <= rect.width / 2) {
+        popBubble(bubble.id);
+    }
+});
     bubble.element = element;
     bubbles.push(bubble);
     elements.gameArea.appendChild(element);
@@ -335,7 +327,7 @@ function popBubble(id) {
     const now = performance.now();
     const oldLevel = getLevel();
     const earnedPoints = BUBBLE_TYPES[bubble.type].points;
-    createBurst(bubble.x + bubble.size / 2, bubble.y + bubble.size / 2, BUBBLE_TYPES[bubble.type].color);
+    createPopEffect(bubble);
     removeBubble(bubble);
 
     if (bubble.type === "freeze") {
@@ -381,29 +373,17 @@ function growBubbles(deltaMs, now) {
     if (bursting.length === 0) return;
 
     bursting.forEach((bubble) => {
-        createBurst(bubble.x + bubble.size / 2, bubble.y + bubble.size / 2, "#ff6e93");
         removeBubble(bubble);
     });
 
     lives = Math.max(0, lives - bursting.length);
     announce(`${bursting.length} bubble${bursting.length === 1 ? "" : "s"} burst! ${lives} life${lives === 1 ? "" : "s"} left.`);
-    playSound("miss");
     updateHUD(now);
 
-    if (lives === 0) endGame();
-}
-
-function createBurst(x, y, color) {
-    for (let particle = 0; particle < 7; particle += 1) {
-        const dot = document.createElement("span");
-        dot.className = "burst";
-        dot.style.left = `${x}px`;
-        dot.style.top = `${y}px`;
-        dot.style.setProperty("--burst-color", color);
-        dot.style.setProperty("--x", `${(Math.random() - 0.5) * 78}px`);
-        dot.style.setProperty("--y", `${(Math.random() - 0.5) * 78}px`);
-        dot.addEventListener("animationend", () => dot.remove(), { once: true });
-        elements.effectLayer.appendChild(dot);
+    if (lives === 0) {
+        endGame();
+    } else {
+        playSound("miss");
     }
 }
 
@@ -416,6 +396,28 @@ function createScoreFloat(x, y, text, color) {
     label.textContent = text;
     label.addEventListener("animationend", () => label.remove(), { once: true });
     elements.effectLayer.appendChild(label);
+}
+
+function createPopEffect(bubble) {
+    const colors = bubble.type === "gold" ? ["#fff8d6", "#ffd700", "#ffbf00", "#ffffff"] : bubble.type === "heart" ? ["#fff0f5", "#ff9eb5", "#f4729b", "#ffffff"] : ["#ffffff", "#b8f7ff", "#65dff5", "#9b8cff"];
+    const centerX = bubble.x + bubble.size / 2;
+    const centerY = bubble.y + bubble.size / 2;
+
+    for (let i = 0; i < 7; i++) {
+        const particle = document.createElement("span");
+        const angle = (Math.PI * 2 * i) / 7 + (Math.random() - 0.5) * 0.5;
+        const distance = 45 + Math.random() * 35;
+
+        particle.className = "pop-particle";
+        particle.style.left = `${centerX}px`;
+        particle.style.top = `${centerY}px`;
+        particle.style.background = colors[i % colors.length];
+        particle.style.setProperty("--move-x", `${Math.cos(angle) * distance}px`);
+        particle.style.setProperty("--move-y", `${Math.sin(angle) * distance}px`);
+
+        particle.addEventListener("animationend", () => particle.remove(), { once: true });
+        elements.effectLayer.appendChild(particle);
+    }
 }
 
 function createFreezeWash() {
@@ -570,7 +572,7 @@ function endGame() {
     clearBubbles();
 
     const wasHighScore = saveScore();
-    element.finalSummary.textContent = `Final score: ${formatNumber(score)} · ${formatTime(elapsedBeforePause)}`;
+    elements.finalSummary.textContent = `Final score: ${formatNumber(score)} · ${formatTime(elapsedBeforePause)}`;
     elements.newRecord.hidden = !wasHighScore;
     elements.gameOverOverlay.hidden = false;
     announce(`Game over. Final score: ${formatNumber(score)}.`);
@@ -610,7 +612,11 @@ function normaliseName(name) {
 // Background music is synthesised in JavaScript, so no audio files are needed.
 const MUSIC_BPM = 112;
 const MUSIC_STEP = 60 / MUSIC_BPM / 4;
-const MUSIC_VOLUME = 0.55;
+let musicVolume = 1.00;
+let sfxVolume = 1.00;
+
+let musicEnabled = true;
+let sfxEnabled = true;
 const MUSIC_MELODY = [
     69, null, 72, 76, 79, null, 76, 72,
     69, null, 72, 74, 76, null, 74, 72,
@@ -647,7 +653,7 @@ function ensureAudioContext() {
 function ensureMusicGain() {
     if (!musicGainNode && audioContext) {
         musicGainNode = audioContext.createGain();
-        musicGainNode.gain.value = MUSIC_VOLUME;
+        musicGainNode.gain.value = musicVolume;
         musicGainNode.connect(audioContext.destination);
     }
     return musicGainNode;
@@ -655,10 +661,14 @@ function ensureMusicGain() {
 
 function fadeMusic(volume) {
     if (!audioContext || !musicGainNode) return;
+
     const now = audioContext.currentTime;
     musicGainNode.gain.cancelScheduledValues(now);
     musicGainNode.gain.setValueAtTime(musicGainNode.gain.value, now);
-    musicGainNode.gain.linearRampToValueAtTime(volume, now + 0.15);
+    musicGainNode.gain.linearRampToValueAtTime(
+        musicEnabled ? volume * musicVolume : 0,
+        now + 0.15
+    );
 }
 
 function scheduleMusicNote(frequency, time, duration, wave, volume) {
@@ -678,7 +688,7 @@ function scheduleMusicNote(frequency, time, duration, wave, volume) {
 }
 
 function scheduleMusic() {
-    if (gameState !== "playing" || muted || !audioContext) return;
+    if (gameState !== "playing" || !audioContext) return;
 
     while (musicNextTime < audioContext.currentTime + 0.2) {
         const index = musicStep % MUSIC_MELODY.length;
@@ -702,12 +712,11 @@ function stopMusicScheduler() {
 }
 
 function startMusic(restart = true) {
-    if (muted || !ensureAudioContext()) return;
-
+    if (!musicEnabled || !ensureAudioContext()) return;
     stopMusicScheduler();
     if (restart) musicStep = 0;
     musicNextTime = audioContext.currentTime + 0.06;
-    fadeMusic(MUSIC_VOLUME);
+    fadeMusic(1.0);
     musicTimer = window.setInterval(scheduleMusic, 25);
     scheduleMusic();
 }
@@ -717,43 +726,39 @@ function stopMusic() {
     fadeMusic(0);
 }
 
-function setMuted(value) {
-    muted = value;
-    elements.soundButton.setAttribute("aria-pressed", String(muted));
-    elements.soundButton.setAttribute("aria-label", muted ? "Unmute sound and music" : "Mute sound and music");
-    elements.soundButton.title = `${muted ? "Unmute" : "Mute"} sound and music (M)`;
-    elements.soundButton.textContent = muted ? "×" : "♪";
-    saveSettings();
-
-    if (muted) stopMusic();
-    else if (gameState === "playing") startMusic(false);
-}
-
 function playSound(type) {
-    if (muted || !window.AudioContext) return;
-
+    if (!sfxEnabled || !window.AudioContext) return;
+    
     try {
         if (!ensureAudioContext()) return;
 
         const tones = {
-            pop: [440, 0.07, "sine", 0.035],
-            gold: [760, 0.12, "triangle", 0.045],
-            freeze: [590, 0.22, "sine", 0.04],
-            heart: [650, 0.18, "triangle", 0.045],
-            miss: [150, 0.15, "square", 0.025],
-            level: [880, 0.15, "sine", 0.04],
-            gameover: [120, 0.35, "sine", 0.045]
+            pop: [1800, 0.055, "triangle", 0.055],
+            gold: [2200, 0.14, "sine", 0.05],
+            freeze: [1200, 0.25, "sine", 0.045],
+            heart: [1050, 0.22, "sine", 0.055],
+            miss: [180, 0.12, "square", 0.035],
+            gameover: [220, 0.6, "sawtooth", 0.06],
         };
+
         const [frequency, duration, wave, volume] = tones[type] || tones.pop;
+
         const oscillator = audioContext.createOscillator();
         const gain = audioContext.createGain();
+
         oscillator.type = wave;
         oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-        gain.gain.setValueAtTime(volume, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+
+        gain.gain.setValueAtTime(volume * sfxVolume, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioContext.currentTime + duration
+        );
+
         oscillator.connect(gain).connect(audioContext.destination);
         oscillator.start();
         oscillator.stop(audioContext.currentTime + duration);
+
     } catch {
         // Sound is enhancement only; silent play is always supported.
     }
@@ -767,7 +772,6 @@ elements.playAgainButton.addEventListener("click", startGame);
 elements.menuButton.addEventListener("click", returnToMenu);
 elements.restartButton.addEventListener("click", startGame);
 elements.leaveButton.addEventListener("click", returnToMenu);
-elements.soundButton.addEventListener("click", () => setMuted(!muted));
 elements.clearScoresButton.addEventListener("click", () => {
     if (window.confirm("Clear all Bubble Bang high scores stored in this browser?")) {
         try {
@@ -795,7 +799,7 @@ document.querySelectorAll('input[name="mode"]').forEach((radio) => {
 
 
 document.addEventListener("keydown", (event) => {
-    if (event.target instanceof HTMLInputElement) return;
+    if (event.target instanceof HTMLInputElement && !["checkbox", "range"].includes(event.target.type)) return;
 
     if (event.code === "Space") {
         event.preventDefault();
@@ -812,10 +816,6 @@ document.addEventListener("keydown", (event) => {
         return;
     }
 
-    if (event.key.toLowerCase() === "m") {
-        setMuted(!muted);
-    }
-
     if (event.key.toLowerCase() === "r" && gameState === "gameover") {
         startGame();
     }
@@ -825,5 +825,44 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-setMuted(muted);
 renderHighScores();
+
+const musicToggle = document.getElementById("musicToggle");
+const sfxToggle = document.getElementById("sfxToggle");
+
+const musicSlider = document.getElementById("musicVolume");
+const sfxSlider = document.getElementById("sfxVolume");
+
+const musicValue = document.getElementById("musicVolumeValue");
+const sfxValue = document.getElementById("sfxVolumeValue");
+
+musicToggle.addEventListener("change", () => {
+    musicEnabled = musicToggle.checked;
+    musicSlider.disabled = !musicEnabled;
+
+    if (musicEnabled && !muted && gameRunning) {
+        startMusic(false);
+    } else {
+        fadeMusic(0);
+        if (musicEnabled === false) {
+            stopMusicScheduler();
+        }
+    }
+});
+
+sfxToggle.addEventListener("change", () => {
+    sfxEnabled = sfxToggle.checked;
+    sfxSlider.disabled = !sfxEnabled;
+});
+
+musicSlider.addEventListener("input", () => {
+    musicVolume = musicSlider.value / 100;
+    musicValue.textContent = `${musicSlider.value}%`;
+
+    fadeMusic(1.00);
+});
+
+sfxSlider.addEventListener("input", () => {
+    sfxVolume = sfxSlider.value / 100;
+    sfxValue.textContent = `${sfxSlider.value}%`;
+});
